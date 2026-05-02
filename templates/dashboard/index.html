@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>控制台</title>
+    <link rel="stylesheet" href="/static/layui/css/layui.css">
+    <style>
+        .stat-card {
+            background: #fff;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+        }
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-right: 15px;
+        }
+        .stat-icon.blue {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .stat-icon.green {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: #fff;
+        }
+        .stat-icon.orange {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: #fff;
+        }
+        .stat-icon.purple {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: #fff;
+        }
+        .stat-info h3 {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0;
+            color: #333;
+        }
+        .stat-info p {
+            margin: 5px 0 0 0;
+            color: #999;
+            font-size: 14px;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .quick-action {
+            text-align: center;
+            padding: 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        .quick-action:hover {
+            background: #f2f2f2;
+        }
+        .quick-action i {
+            font-size: 36px;
+            color: #2a5298;
+        }
+        .quick-action p {
+            margin-top: 10px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md3">
+                <div class="stat-card">
+                    <div class="stat-icon blue">
+                        <i class="layui-icon layui-icon-list"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="todayCount">0</h3>
+                        <p>今日入场车次</p>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md3">
+                <div class="stat-card">
+                    <div class="stat-icon green">
+                        <i class="layui-icon layui-icon-rmb"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="todayRevenue">¥0.00</h3>
+                        <p>今日收入</p>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md3">
+                <div class="stat-card">
+                    <div class="stat-icon orange">
+                        <i class="layui-icon layui-icon-car"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="activeCount">0</h3>
+                        <p>场内车辆</p>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md3">
+                <div class="stat-card">
+                    <div class="stat-icon purple">
+                        <i class="layui-icon layui-icon-location"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3><span id="usedSpaces">0</span>/<span id="totalSpaces">0</span></h3>
+                        <p>车位使用</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md8">
+                <div class="layui-card">
+                    <div class="layui-card-header">
+                        <span class="card-title">快速操作</span>
+                    </div>
+                    <div class="layui-card-body">
+                        <div class="layui-row">
+                            <div class="layui-col-md3">
+                                <div class="quick-action" onclick="parent.openTab('/recognize/index', '车牌识别')">
+                                    <i class="layui-icon layui-icon-face-camera"></i>
+                                    <p>车牌识别</p>
+                                </div>
+                            </div>
+                            <div class="layui-col-md3">
+                                <div class="quick-action" onclick="parent.openTab('/lot/list', '停车场管理')">
+                                    <i class="layui-icon layui-icon-car"></i>
+                                    <p>停车场管理</p>
+                                </div>
+                            </div>
+                            <div class="layui-col-md3">
+                                <div class="quick-action" onclick="parent.openTab('/vehicle/list', '车辆管理')">
+                                    <i class="layui-icon layui-icon-diamond"></i>
+                                    <p>车辆管理</p>
+                                </div>
+                            </div>
+                            <div class="layui-col-md3">
+                                <div class="quick-action" onclick="parent.openTab('/record/list', '停车记录')">
+                                    <i class="layui-icon layui-icon-list"></i>
+                                    <p>停车记录</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md4">
+                <div class="layui-card">
+                    <div class="layui-card-header">
+                        <span class="card-title">系统信息</span>
+                    </div>
+                    <div class="layui-card-body">
+                        <table class="layui-table">
+                            <tbody>
+                                <tr>
+                                    <td style="width: 100px;">系统名称</td>
+                                    <td>智能停车场管理系统</td>
+                                </tr>
+                                <tr>
+                                    <td>版本号</td>
+                                    <td>v1.0.0</td>
+                                </tr>
+                                <tr>
+                                    <td>技术栈</td>
+                                    <td>Golang + Gin + Layui</td>
+                                </tr>
+                                <tr>
+                                    <td>服务器时间</td>
+                                    <td id="serverTime">-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/layui/layui.js"></script>
+    <script src="/static/js/common.js"></script>
+    <script>
+        layui.use(['layer', 'jquery'], function() {
+            var layer = layui.layer;
+            var $ = layui.jquery;
+
+            loadStats();
+            updateTime();
+        });
+
+        function loadStats() {
+            get('/dashboard/stats', function(res) {
+                $('#todayCount').text(res.data.today_count);
+                $('#todayRevenue').text('¥' + formatMoney(res.data.today_revenue));
+                $('#activeCount').text(res.data.active_count);
+                $('#usedSpaces').text(res.data.used_spaces);
+                $('#totalSpaces').text(res.data.total_spaces);
+            });
+        }
+
+        function updateTime() {
+            var now = new Date();
+            var timeStr = now.getFullYear() + '-' + 
+                         String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                         String(now.getDate()).padStart(2, '0') + ' ' + 
+                         String(now.getHours()).padStart(2, '0') + ':' + 
+                         String(now.getMinutes()).padStart(2, '0') + ':' + 
+                         String(now.getSeconds()).padStart(2, '0');
+            $('#serverTime').text(timeStr);
+            setTimeout(updateTime, 1000);
+        }
+    </script>
+</body>
+</html>

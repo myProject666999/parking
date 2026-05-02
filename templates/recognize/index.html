@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>车牌识别</title>
+    <link rel="stylesheet" href="/static/layui/css/layui.css">
+    <style>
+        .upload-box {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 60px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-box:hover {
+            border-color: #2a5298;
+            background: #f8f9fa;
+        }
+        .upload-box i {
+            font-size: 60px;
+            color: #999;
+        }
+        .upload-box p {
+            margin-top: 15px;
+            color: #666;
+        }
+        .result-box {
+            background: #fff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .result-label {
+            color: #666;
+        }
+        .result-value {
+            font-weight: bold;
+            color: #333;
+        }
+        .plate-number {
+            font-size: 28px;
+            color: #2a5298;
+            font-weight: bold;
+        }
+        #previewImage {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md6">
+                <div class="layui-card">
+                    <div class="layui-card-header" style="font-weight: bold;">
+                        <i class="layui-icon layui-icon-face-camera"></i> 上传图片
+                    </div>
+                    <div class="layui-card-body">
+                        <div class="upload-box" id="uploadBox">
+                            <i class="layui-icon layui-icon-picture"></i>
+                            <p>点击或拖拽图片到此处上传</p>
+                            <p style="font-size: 12px; color: #999; margin-top: 5px;">支持 JPG、PNG 格式</p>
+                        </div>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <img id="previewImage" alt="预览图片">
+                        </div>
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                        <div style="margin-top: 20px;">
+                            <button class="layui-btn layui-btn-normal layui-btn-fluid" id="recognizeBtn" disabled>
+                                <i class="layui-icon layui-icon-search"></i> 开始识别
+                            </button>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <button class="layui-btn layui-btn-primary layui-btn-fluid" id="mockBtn">
+                                <i class="layui-icon layui-icon-ok"></i> 模拟识别（测试用）
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md6">
+                <div class="layui-card">
+                    <div class="layui-card-header" style="font-weight: bold;">
+                        <i class="layui-icon layui-icon-list"></i> 识别结果
+                    </div>
+                    <div class="layui-card-body">
+                        <div class="result-box" id="resultBox" style="display: none;">
+                            <div class="result-item" style="text-align: center; border-bottom: none; margin-bottom: 20px;">
+                                <span class="plate-number" id="plateNumber">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">车牌类型</span>
+                                <span class="result-value" id="plateType">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">车牌颜色</span>
+                                <span class="result-value" id="plateColor">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">置信度</span>
+                                <span class="result-value" id="confidence">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">识别状态</span>
+                                <span class="result-value" id="status">-</span>
+                            </div>
+                        </div>
+                        <div id="emptyBox" style="text-align: center; padding: 60px; color: #999;">
+                            <i class="layui-icon layui-icon-face-cry" style="font-size: 48px;"></i>
+                            <p style="margin-top: 15px;">暂无识别结果</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layui-card">
+                    <div class="layui-card-header" style="font-weight: bold;">
+                        <i class="layui-icon layui-icon-car"></i> 快捷操作
+                    </div>
+                    <div class="layui-card-body">
+                        <div class="layui-row">
+                            <div class="layui-col-md6">
+                                <button class="layui-btn layui-btn-fluid layui-btn-warm" onclick="vehicleEntry()">
+                                    <i class="layui-icon layui-icon-enter"></i> 车辆入场
+                                </button>
+                            </div>
+                            <div class="layui-col-md6">
+                                <button class="layui-btn layui-btn-fluid layui-btn-danger" onclick="vehicleExit()">
+                                    <i class="layui-icon layui-icon-close"></i> 车辆出场
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/layui/layui.js"></script>
+    <script src="/static/js/common.js"></script>
+    <script>
+        var currentImageBase64 = '';
+        var currentPlateNo = '';
+
+        layui.use(['layer', 'jquery', 'form'], function() {
+            var layer = layui.layer;
+            var $ = layui.jquery;
+
+            $('#uploadBox').on('click', function() {
+                $('#fileInput').click();
+            });
+
+            $('#fileInput').on('change', function(e) {
+                var file = e.target.files[0];
+                if (!file) return;
+
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#previewImage').attr('src', e.target.result).show();
+                    currentImageBase64 = e.target.result.split(',')[1];
+                    $('#recognizeBtn').prop('disabled', false);
+                };
+                reader.readAsDataURL(file);
+            });
+
+            $('#recognizeBtn').on('click', function() {
+                if (!currentImageBase64) {
+                    layer.msg('请先上传图片', {icon: 2});
+                    return;
+                }
+
+                var loadIndex = layer.load(1);
+
+                post('/recognize', {
+                    image_base64: currentImageBase64
+                }, function(res) {
+                    layer.close(loadIndex);
+                    showResult(res.data);
+                }, function() {
+                    layer.close(loadIndex);
+                });
+            });
+
+            $('#mockBtn').on('click', function() {
+                var loadIndex = layer.load(1);
+
+                post('/recognize', {
+                    is_mock: true
+                }, function(res) {
+                    layer.close(loadIndex);
+                    showResult(res.data);
+                }, function() {
+                    layer.close(loadIndex);
+                });
+            });
+        });
+
+        function showResult(data) {
+            $('#emptyBox').hide();
+            $('#resultBox').show();
+
+            $('#plateNumber').text(data.plate_no || '-');
+            $('#plateType').text(data.plate_type || '-');
+            $('#plateColor').text(data.plate_color || '-');
+            $('#confidence').text((data.confidence || 0) + '%');
+            $('#status').text(data.success ? '成功' : '失败');
+
+            if (data.success) {
+                currentPlateNo = data.plate_no;
+                layer.msg('识别成功', {icon: 1});
+            } else {
+                layer.msg(data.message || '识别失败', {icon: 2});
+            }
+        }
+
+        function vehicleEntry() {
+            if (!currentPlateNo) {
+                layer.msg('请先识别车牌', {icon: 2});
+                return;
+            }
+
+            parent.layer.open({
+                type: 2,
+                title: '车辆入场',
+                shadeClose: true,
+                shade: 0.8,
+                area: ['500px', '450px'],
+                content: '/recognize/entry.html?plate_no=' + currentPlateNo
+            });
+        }
+
+        function vehicleExit() {
+            if (!currentPlateNo) {
+                layer.msg('请先识别车牌', {icon: 2});
+                return;
+            }
+
+            parent.layer.open({
+                type: 2,
+                title: '车辆出场',
+                shadeClose: true,
+                shade: 0.8,
+                area: ['500px', '450px'],
+                content: '/recognize/exit.html?plate_no=' + currentPlateNo
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>车辆出场</title>
+    <link rel="stylesheet" href="/static/layui/css/layui.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: #666;
+        }
+        .info-value {
+            font-weight: bold;
+            color: #333;
+        }
+        .amount {
+            font-size: 24px;
+            color: #ff5722;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <form class="layui-form" lay-filter="exitForm">
+        <div class="layui-form-item">
+            <label class="layui-form-label">车牌号</label>
+            <div class="layui-input-block">
+                <input type="text" name="vehicle_no" lay-verify="required" placeholder="请输入车牌号" autocomplete="off" class="layui-input" id="vehicleNo">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button type="button" class="layui-btn layui-btn-primary" id="searchBtn">
+                    <i class="layui-icon layui-icon-search"></i> 查询
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div id="recordInfo" style="display: none;">
+        <div class="info-box">
+            <h4 style="margin-bottom: 15px; font-weight: bold;">停车信息</h4>
+            <div class="info-item">
+                <span class="info-label">车牌号</span>
+                <span class="info-value" id="infoPlateNo">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">入场时间</span>
+                <span class="info-value" id="infoEntryTime">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">停车时长</span>
+                <span class="info-value" id="infoParkingHours">-</span>
+            </div>
+            <div class="info-item" style="align-items: center;">
+                <span class="info-label">应付金额</span>
+                <span class="amount" id="infoAmount">-</span>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">支付方式</label>
+            <div class="layui-input-block">
+                <select name="payment_type" id="paymentType">
+                    <option value="1" selected>现金</option>
+                    <option value="2">微信支付</option>
+                    <option value="3">支付宝</option>
+                    <option value="4">会员卡</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button type="button" class="layui-btn layui-btn-normal" id="confirmExit">
+                    <i class="layui-icon layui-icon-rmb"></i> 确认收费出场
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/layui/layui.js"></script>
+    <script src="/static/js/common.js"></script>
+    <script>
+        var form, layer, $;
+        var currentRecord = null;
+        var plateNo = getQueryParam('plate_no');
+
+        layui.use(['form', 'layer', 'jquery'], function() {
+            form = layui.form;
+            layer = layui.layer;
+            $ = layui.jquery;
+
+            if (plateNo) {
+                $('#vehicleNo').val(plateNo);
+                searchRecord();
+            }
+
+            $('#searchBtn').on('click', searchRecord);
+            $('#confirmExit').on('click', confirmExit);
+
+            form.render('select');
+        });
+
+        function searchRecord() {
+            var vehicleNo = $('#vehicleNo').val().trim();
+            if (!vehicleNo) {
+                layer.msg('请输入车牌号', {icon: 2});
+                return;
+            }
+
+            var loadIndex = layer.load(1);
+
+            get('/record/list?vehicle_no=' + vehicleNo + '&status=0&limit=100', function(res) {
+                layer.close(loadIndex);
+                
+                if (res.data && res.data.length > 0) {
+                    currentRecord = res.data[0];
+                    showRecordInfo(currentRecord);
+                    $('#recordInfo').show();
+                } else {
+                    layer.msg('未找到该车辆的在场记录', {icon: 2});
+                    $('#recordInfo').hide();
+                }
+            }, function() {
+                layer.close(loadIndex);
+            });
+        }
+
+        function showRecordInfo(record) {
+            $('#infoPlateNo').text(record.vehicle_no);
+            $('#infoEntryTime').text(formatDate(record.entry_time));
+
+            var entryTime = new Date(record.entry_time);
+            var exitTime = new Date();
+            var hours = (exitTime - entryTime) / (1000 * 60 * 60);
+            
+            $('#infoParkingHours').text(hours.toFixed(2) + ' 小时');
+
+            var hourlyRate = 5.0;
+            var amount = Math.ceil(hours) * hourlyRate;
+            if (amount < 5) amount = 5;
+
+            $('#infoAmount').text('¥ ' + amount.toFixed(2));
+            currentRecord.calcAmount = amount;
+        }
+
+        function confirmExit() {
+            if (!currentRecord) {
+                layer.msg('请先查询停车记录', {icon: 2});
+                return;
+            }
+
+            var loadIndex = layer.load(1);
+
+            var vehicleNo = $('#vehicleNo').val().trim();
+
+            post('/vehicle/exit', {
+                record_no: vehicleNo
+            }, function(res) {
+                layer.close(loadIndex);
+
+                var paymentType = $('#paymentType').val();
+
+                post('/finance/payment', {
+                    record_id: currentRecord.id,
+                    amount: currentRecord.calcAmount || res.data.amount || 0,
+                    payment_type: parseInt(paymentType)
+                }, function(payRes) {
+                    layer.msg('出场成功', {icon: 1}, function() {
+                        parent.layer.close(parent.layer.getFrameIndex(window.name));
+                        parent.layui.table.reload('recordTable');
+                    });
+                }, function() {
+                    layer.msg('出场成功', {icon: 1}, function() {
+                        parent.layer.close(parent.layer.getFrameIndex(window.name));
+                        parent.layui.table.reload('recordTable');
+                    });
+                });
+            }, function() {
+                layer.close(loadIndex);
+            });
+        }
+
+        function getQueryParam(name) {
+            var url = window.location.search.substring(1);
+            var params = url.split('&');
+            for (var i = 0; i < params.length; i++) {
+                var param = params[i].split('=');
+                if (param[0] === name) {
+                    return param[1];
+                }
+            }
+            return null;
+        }
+    </script>
+</body>
+</html>

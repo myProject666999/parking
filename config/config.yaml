@@ -1,0 +1,30 @@
+server:
+  port: 8090
+  mode: debug
+
+database:
+  driver: mysql
+  host: 127.0.0.1
+  port: 3306
+  username: root
+  password: 123456
+  database: parking
+  charset: utf8mb4
+  max_idle_conns: 10
+  max_open_conns: 100
+
+jwt:
+  secret: parking-secret-key-2024
+  expire: 7200
+
+aliyun:
+  access_key_id: your_access_key_id
+  access_key_secret: your_access_key_secret
+  endpoint: ocr.cn-shanghai.aliyuncs.com
+
+log:
+  level: info
+  filename: logs/app.log
+  max_size: 10
+  max_backups: 5
+  max_age: 30

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>智能停车场管理系统 - 登录</title>
+    <link rel="stylesheet" href="/static/layui/css/layui.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-box {
+            width: 420px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .login-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 30px;
+            text-align: center;
+        }
+        .login-header h1 {
+            color: #fff;
+            font-size: 24px;
+            margin: 0;
+        }
+        .login-header p {
+            color: rgba(255,255,255,0.8);
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .login-body {
+            padding: 30px 40px;
+        }
+        .layui-form-item {
+            margin-bottom: 20px;
+        }
+        .layui-input {
+            height: 44px;
+            border-radius: 5px;
+        }
+        .layui-btn {
+            height: 44px;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .login-footer {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 12px;
+        }
+        .icon-input {
+            position: relative;
+        }
+        .icon-input i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+        .icon-input .layui-input {
+            padding-left: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <div class="login-header">
+            <h1><i class="layui-icon layui-icon-car"></i> 智能停车场管理系统</h1>
+            <p>Intelligent Parking Management System</p>
+        </div>
+        <div class="login-body">
+            <form class="layui-form" id="loginForm" onsubmit="return false;">
+                <div class="layui-form-item">
+                    <div class="icon-input">
+                        <i class="layui-icon layui-icon-username"></i>
+                        <input type="text" name="username" lay-verify="required" placeholder="请输入用户名" autocomplete="off" class="layui-input" id="username" value="admin">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="icon-input">
+                        <i class="layui-icon layui-icon-password"></i>
+                        <input type="password" name="password" lay-verify="required" placeholder="请输入密码" autocomplete="off" class="layui-input" id="password" value="123456">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <button type="button" class="layui-btn layui-btn-fluid layui-btn-normal" id="loginBtn">
+                        <i class="layui-icon layui-icon-ok-circle"></i> 登 录
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="login-footer">
+            <p>默认账号：admin / 123456</p>
+        </div>
+    </div>
+
+    <script src="/static/layui/layui.js"></script>
+    <script>
+        layui.use(['layer', 'jquery'], function() {
+            var layer = layui.layer;
+            var $ = layui.jquery;
+
+            $('#loginBtn').on('click', doLogin);
+            
+            $('#password').on('keypress', function(e) {
+                if (e.which === 13) {
+                    doLogin();
+                }
+            });
+
+            function doLogin() {
+                var username = $('#username').val().trim();
+                var password = $('#password').val().trim();
+
+                if (!username) {
+                    layer.msg('请输入用户名', {icon: 2});
+                    return;
+                }
+                if (!password) {
+                    layer.msg('请输入密码', {icon: 2});
+                    return;
+                }
+
+                var loadIndex = layer.load(1);
+
+                $.ajax({
+                    url: '/api/login',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        username: username,
+                        password: password
+                    }),
+                    success: function(res) {
+                        layer.close(loadIndex);
+                        if (res.code === 0) {
+                            localStorage.setItem('token', res.data.token);
+                            localStorage.setItem('userInfo', JSON.stringify(res.data));
+                            layer.msg('登录成功', {icon: 1}, function() {
+                                window.location.href = '/index';
+                            });
+                        } else {
+                            layer.msg(res.message, {icon: 2});
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        layer.close(loadIndex);
+                        console.log('Login error:', xhr, status, error);
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            layer.msg(xhr.responseJSON.message, {icon: 2});
+                        } else {
+                            layer.msg('登录失败，请检查网络', {icon: 2});
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
